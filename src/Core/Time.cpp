@@ -1,4 +1,3 @@
-#pragma once
 #include "Core/Time.h"
 #include <chrono>
 
@@ -6,17 +5,22 @@ namespace SuperEngine
 {
     void Time::Tick()
     {
+        using namespace std::chrono;
+        time_point<high_resolution_clock> currentTime = high_resolution_clock::now();
+
         if (isFirstFrame)
         {
-            lastFrameTime = std::chrono::high_resolution_clock::now();
+            startTime = currentTime;
+            lastFrameTime = currentTime;
             isFirstFrame = false;
+            return;
         }
-        auto currentTime = std::chrono::high_resolution_clock::now();
 
-        std::chrono::duration<float> _deltaTime = currentTime - lastFrameTime;
-
-        deltaTime = _deltaTime.count();
-
+        duration<float> deltaTime = currentTime - lastFrameTime;
+        m_deltaTime = deltaTime.count();
         lastFrameTime = currentTime;
+
+        duration<float> totalTime = currentTime - startTime;
+        m_totalTime = totalTime.count();
     }
 }

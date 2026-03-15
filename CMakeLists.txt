@@ -6,8 +6,9 @@ set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED True)
 
 add_executable(SuperEngine ./src/main.cpp
-    ./src/Core/Engine.cpp
+    ./src/Core/Engine/Engine.cpp
     ./src/Core/GameObject.cpp
+    ./src/Core/SceneManagement/Scene.cpp
     ./src/Core/Time.cpp
 )
 
