@@ -1,8 +1,9 @@
+#define SDL_MAIN_HANDLED
 #include "Core/Engine/Engine.h"
 #include "Core/Components/Transform.h"
 #include "Core/Components/Test.h"
 
-int main()
+int main(int argc, char **args)
 {
     using namespace SuperEngine;
     Engine engine = Engine();
@@ -10,7 +11,6 @@ int main()
     auto worldScene = engine.CreateScene("World");
     auto player = worldScene->CreateGameObject("Player");
     player->AddComponent<Transform>();
-    player->AddComponent<Test>();
 
     engine.Run();
     return 0;

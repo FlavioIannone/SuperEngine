@@ -4,6 +4,7 @@
 #include <vector>
 #include <string>
 #include <memory>
+#include <SDL.h>
 #include "Core/SceneManagement/Scene.h"
 
 namespace SuperEngine
@@ -14,12 +15,14 @@ namespace SuperEngine
         std::atomic<bool> isRunning = true;
         std::vector<std::unique_ptr<Scene>> m_scenes;
         Scene *m_activeScene = nullptr;
+        SDL_Window *m_window = nullptr;
+        SDL_Renderer *m_renderer = nullptr;
 
     public:
         // Constructor
-        Engine() { std::cout << "Engine started.\n"; }
+        Engine();
         // Destructor
-        ~Engine() { std::cout << "Engine terminated.\n"; }
+        ~Engine();
 
         // methods
         void Run();
