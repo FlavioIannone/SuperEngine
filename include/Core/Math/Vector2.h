@@ -1,5 +1,4 @@
 #pragma once
-#include <cmath>
 
 namespace SuperEngine
 {
@@ -7,37 +6,23 @@ namespace SuperEngine
     {
 
         float x, y;
-        Vector2() : x(0.0f), y(0.0f) {}
-        Vector2(float _x, float _y) : x(_x), y(_y) {}
+        Vector2();
+        Vector2(float, float);
 
+        // Direction vectors
         static const Vector2 zero;
         static const Vector2 one;
         static const Vector2 up;
         static const Vector2 right;
 
-        Vector2 operator+(const Vector2 &other) const
-        {
-            return Vector2(x + other.x, y + other.y);
-        }
-        Vector2 operator-(const Vector2 &other) const
-        {
-            return Vector2(x - other.x, y - other.y);
-        }
-
-        Vector2 operator*(float scalar) const
-        {
-            return Vector2(x * scalar, y * scalar);
-        }
-
-        float operator*(Vector2 other) const
-        {
-            return x * other.x + y * other.y;
-        }
-
-        Vector2 operator/(float scalar) const
-        {
-            return Vector2(x / scalar, y / scalar);
-        }
+        // Operators overload
+        Vector2 operator+(const Vector2 &other) const;
+        Vector2 operator-(const Vector2 &other) const;
+        Vector2 operator*(float scalar) const;
+        float operator*(Vector2 &other) const;
+        Vector2 operator/(float scalar) const;
+        bool operator!=(Vector2 other) const;
+        bool operator==(Vector2 other) const;
     };
 
     inline const Vector2 Vector2::zero{0.0f, 0.0f};

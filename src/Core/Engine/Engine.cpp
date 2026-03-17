@@ -34,7 +34,6 @@ namespace SuperEngine
         }
         std::cout << "Engine started.\n";
     }
-
     Engine::~Engine()
     {
         if (m_renderer)
@@ -45,7 +44,6 @@ namespace SuperEngine
 
         std::cout << "Engine terminated.\n";
     }
-
     void Engine::Run()
     {
         SDL_Event event;
@@ -72,7 +70,6 @@ namespace SuperEngine
             SDL_RenderPresent(m_renderer);
         }
     }
-
     Scene *Engine::CreateScene(std::string name)
     {
         uint64_t id = IDManager<Scene>::GetNext();
@@ -83,7 +80,6 @@ namespace SuperEngine
         m_scenes.push_back(std::move(newScene));
         return ptr;
     }
-
     Scene *Engine::CreateScene()
     {
         uint64_t id = IDManager<Scene>::GetNext();
@@ -93,7 +89,6 @@ namespace SuperEngine
         m_scenes.push_back(std::move(newScene));
         return ptr;
     }
-
     void Engine::SetActiveScene(uint64_t sceneId)
     {
         for (auto &s : m_scenes)

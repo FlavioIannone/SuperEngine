@@ -8,13 +8,11 @@ namespace SuperEngine
         m_id = id;
         m_name = name;
     }
-
     Scene::Scene(uint64_t id)
     {
         m_id = id;
         m_name = "Scene" + std::to_string(id);
     }
-
     void Scene::Update()
     {
         for (auto &obj : m_gameObjects)
@@ -25,7 +23,6 @@ namespace SuperEngine
             }
         }
     }
-
     GameObject *Scene::CreateGameObject(std::string name)
     {
         uint64_t id = IDManager<GameObject>::GetNext();
@@ -34,7 +31,6 @@ namespace SuperEngine
         m_gameObjects.push_back(std::move(obj));
         return ptr;
     }
-
     GameObject *Scene::CreateGameObject()
     {
         uint64_t id = IDManager<GameObject>::GetNext();

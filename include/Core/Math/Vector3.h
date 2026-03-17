@@ -1,5 +1,4 @@
 #pragma once
-#include <cmath>
 
 namespace SuperEngine
 {
@@ -8,38 +7,24 @@ namespace SuperEngine
 
         float x, y, z;
 
-        Vector3() : x(0.0f), y(0.0f), z(0.0f) {}
-        Vector3(float _x, float _y, float _z) : x(_x), y(_y), z(_z) {}
+        Vector3();
+        Vector3(float _x, float _y, float _z);
 
+        // Direction vectors
         static const Vector3 zero;
         static const Vector3 one;
         static const Vector3 up;
         static const Vector3 right;
         static const Vector3 forward;
 
-        Vector3 operator+(const Vector3 &other) const
-        {
-            return Vector3(x + other.x, y + other.y, z + other.z);
-        }
-        Vector3 operator-(const Vector3 &other) const
-        {
-            return Vector3(x - other.x, y - other.y, z - other.z);
-        }
-
-        Vector3 operator*(float scalar) const
-        {
-            return Vector3(x * scalar, y * scalar, z * scalar);
-        }
-
-        float operator*(Vector3 other) const
-        {
-            return x * other.x + y * other.y + z * other.z;
-        }
-
-        Vector3 operator/(float scalar) const
-        {
-            return Vector3(x / scalar, y / scalar, z / scalar);
-        }
+        // Operators overload
+        Vector3 operator+(const Vector3 &other) const;
+        Vector3 operator-(const Vector3 &other) const;
+        Vector3 operator*(float scalar) const;
+        float operator*(Vector3 &other) const;
+        Vector3 operator/(float scalar) const;
+        bool operator!=(Vector3 other) const;
+        bool operator==(Vector3 other) const;
     };
 
     inline const Vector3 Vector3::zero{0.0f, 0.0f, 0.0f};

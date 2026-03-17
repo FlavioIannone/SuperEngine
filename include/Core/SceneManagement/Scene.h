@@ -24,16 +24,12 @@ namespace SuperEngine
 
         // Getters
         std::string GetName() const { return m_name; }
-
         uint64_t GetId() const { return m_id; }
-
         bool IsEnabled() const { return isEnabled; }
 
         // Setters
         void SetName(std::string name) { m_name = name; }
-
         void Enable() { isEnabled = true; }
-
         void Disable() { isEnabled = false; }
 
         // Methods
@@ -41,5 +37,5 @@ namespace SuperEngine
 
         GameObject *CreateGameObject(std::string);
         GameObject *CreateGameObject();
-        };
+    };
 }
