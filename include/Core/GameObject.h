@@ -5,6 +5,7 @@
 #include <string>
 #include <atomic>
 #include "Components/Component.h"
+#include "Components/Transform.h"
 
 namespace SuperEngine
 {
@@ -16,6 +17,7 @@ namespace SuperEngine
         std::string m_name = "GameObject";
         std::vector<std::unique_ptr<Component>> m_components;
         std::atomic<bool> isEnabled = true;
+        Transform *m_transform = nullptr;
 
     public:
         // Constructors
@@ -26,16 +28,13 @@ namespace SuperEngine
 
         // Getters
         std::string GetName() const { return m_name; }
-
         uint64_t GetId() const { return m_id; }
-
         bool IsEnabled() const { return isEnabled; }
+        Transform *GetTransform() const { return m_transform; }
 
         // Setters
         void SetName(std::string name) { m_name = name; }
-
         void Enable() { isEnabled = true; }
-
         void Disable() { isEnabled = false; }
 
         // Methods
@@ -52,7 +51,6 @@ namespace SuperEngine
             ptr->Start();
             return ptr;
         }
-
         template <typename T>
         T *GetComponent()
         {

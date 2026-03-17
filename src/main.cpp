@@ -1,17 +1,18 @@
 #define SDL_MAIN_HANDLED
 #include "Core/Engine/Engine.h"
-#include "Core/Components/Transform.h"
+#include "Core/Components/Camera.h"
 #include "Core/Components/Test.h"
 
 int main(int argc, char **args)
 {
     using namespace SuperEngine;
-    Engine engine = Engine();
+    auto worldScene = Engine::GetInstance().CreateScene("World");
+    auto worldSceneCamera = worldScene->CreateGameObject("Main Camera");
 
-    auto worldScene = engine.CreateScene("World");
+    worldSceneCamera->AddComponent<Camera>();
+
     auto player = worldScene->CreateGameObject("Player");
-    player->AddComponent<Transform>();
 
-    engine.Run();
+    Engine::GetInstance().Run();
     return 0;
 }

@@ -24,6 +24,7 @@ add_executable(SuperEngine
     ./src/Core/Time.cpp # Time
     # Components
     ./src/Core/Components/Transform.cpp
+    ./src/Core/Components/Camera.cpp
     # Math
     ./src/Core/Math/Vector2.cpp
     ./src/Core/Math/Vector3.cpp
