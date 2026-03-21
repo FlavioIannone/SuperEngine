@@ -6,18 +6,24 @@
 #include <atomic>
 #include "Components/Component.h"
 #include "Components/Transform.h"
+#include "ILifecycle.h"
 
 namespace SuperEngine
 {
 
-    class GameObject
+    class GameObject : public ILifecycle
     {
     private:
         uint64_t m_id;
         std::string m_name = "GameObject";
+
         std::vector<std::unique_ptr<Component>> m_components;
-        std::atomic<bool> isEnabled = true;
         Transform *m_transform = nullptr;
+        std::atomic<bool> isEnabled = true;
+        std::atomic<bool> hasCalledStart = false;
+
+    protected:
+        std::atomic<bool> m_pendingDestroy = false;
 
     public:
         // Constructors
@@ -34,8 +40,16 @@ namespace SuperEngine
 
         // Setters
         void SetName(std::string name) { m_name = name; }
-        void Enable() { isEnabled = true; }
-        void Disable() { isEnabled = false; }
+        void Enable()
+        {
+            isEnabled = true;
+            OnEnable();
+        }
+        void Disable()
+        {
+            isEnabled = false;
+            OnDisable();
+        }
 
         // Methods
         template <typename T, typename... Args>
@@ -62,7 +76,18 @@ namespace SuperEngine
             }
             return nullptr;
         }
+        // Lifecycle methods
 
+        void Awake();
+        void Start();
         void Update();
+        void OnDestroy();
+        void OnEnable();
+        void OnDisable();
+
+        void Cleanup();
+
+        void Destroy() { m_pendingDestroy = true; }
+        bool IsPendingDestroy() const { return m_pendingDestroy; }
     };
 }

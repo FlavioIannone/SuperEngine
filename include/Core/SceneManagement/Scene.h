@@ -4,22 +4,24 @@
 #include <string>
 #include <vector>
 #include "../GameObject.h"
+#include "../ILifecycle.h"
 
 namespace SuperEngine
 {
-    class Scene
+    class Scene : public ILifecycle
     {
     private:
-        std::atomic<bool> isEnabled = true;
-        std::vector<std::unique_ptr<GameObject>> m_gameObjects;
         uint64_t m_id;
         std::string m_name = "Scene";
+        std::atomic<bool> isEnabled = true;
+        std::atomic<bool> hasCalledStart = false;
+        std::vector<std::unique_ptr<GameObject>> m_gameObjects;
 
     public:
         // Constructors
         Scene(uint64_t, std::string);
         Scene(uint64_t);
-        // Destructure
+        // Destructor
         ~Scene() = default;
 
         // Getters
@@ -29,11 +31,26 @@ namespace SuperEngine
 
         // Setters
         void SetName(std::string name) { m_name = name; }
-        void Enable() { isEnabled = true; }
-        void Disable() { isEnabled = false; }
+        void Enable()
+        {
+            isEnabled = true;
+            OnEnable();
+        }
+        void Disable()
+        {
+            isEnabled = false;
+            OnDisable();
+        }
 
-        // Methods
+        // Lifecycle methods
+        void Awake();
+        void Start();
         void Update();
+        void OnDestroy();
+        void OnEnable();
+        void OnDisable();
+
+        void Cleanup();
 
         GameObject *CreateGameObject(std::string);
         GameObject *CreateGameObject();

@@ -10,7 +10,6 @@ namespace SuperEngine
         std::chrono::high_resolution_clock::time_point startTime;
         double m_deltaTime = 0;
         double m_totalTime = 0;
-        bool isFirstFrame = true;
 
         Time(const Time &) = delete;
         Time &operator=(const Time &) = delete;

@@ -7,5 +7,6 @@ namespace SuperEngine
         this->position = position;
         this->rotation = rotation;
         this->scale = scale;
+        isIndestructible = true;
     }
 }

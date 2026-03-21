@@ -19,10 +19,15 @@ namespace SuperEngine
 
         // Operators overload
         Vector3 operator+(const Vector3 &other) const;
+        void operator+=(const Vector3 &other);
         Vector3 operator-(const Vector3 &other) const;
+        void operator-=(const Vector3 &other);
         Vector3 operator*(float scalar) const;
-        float operator*(Vector3 &other) const;
+        void operator*=(float scalar);
+        float operator*(const Vector3 &other) const;
+        void operator*=(const Vector3 &other);
         Vector3 operator/(float scalar) const;
+        void operator/=(float scalar);
         bool operator!=(Vector3 other) const;
         bool operator==(Vector3 other) const;
     };

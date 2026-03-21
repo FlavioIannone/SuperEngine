@@ -1,4 +1,5 @@
 #include "Core/Time.h"
+#include "Core/Engine/Engine.h"
 #include <chrono>
 
 namespace SuperEngine
@@ -7,12 +8,15 @@ namespace SuperEngine
     {
         using namespace std::chrono;
         time_point<high_resolution_clock> currentTime = high_resolution_clock::now();
+        static bool isFirstTick = true;
 
-        if (isFirstFrame)
+        if (isFirstTick)
         {
+            isFirstTick = false;
             startTime = currentTime;
             lastFrameTime = currentTime;
-            isFirstFrame = false;
+            m_deltaTime = 0.0f;
+            m_totalTime = 0.0f;
             return;
         }
 

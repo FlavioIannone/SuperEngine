@@ -13,21 +13,46 @@ namespace SuperEngine
     {
         return Vector2(x + other.x, y + other.y);
     }
+    void Vector2::operator+=(const Vector2 &other)
+    {
+        this->x = this->x + other.x;
+        this->y = this->y + other.y;
+    }
     Vector2 Vector2::operator-(const Vector2 &other) const
     {
         return Vector2(x - other.x, y - other.y);
+    }
+    void Vector2::operator-=(const Vector2 &other)
+    {
+        this->x = this->x - other.x;
+        this->y = this->y - other.y;
     }
     Vector2 Vector2::operator*(float scalar) const
     {
         return Vector2(x * scalar, y * scalar);
     }
-    float Vector2::operator*(Vector2 &other) const
+    void Vector2::operator*=(const Vector2 &other)
+    {
+        this->x = this->x * other.x;
+        this->y = this->y * other.y;
+    }
+    float Vector2::operator*(const Vector2 &other) const
     {
         return x * other.x + y * other.y;
+    }
+    void Vector2::operator*=(float scalar)
+    {
+        this->x = this->x * scalar;
+        this->y = this->y * scalar;
     }
     Vector2 Vector2::operator/(float scalar) const
     {
         return Vector2(x / scalar, y / scalar);
+    }
+    void Vector2::operator/=(float scalar)
+    {
+        this->x = this->x / scalar;
+        this->y = this->y / scalar;
     }
     bool Vector2::operator!=(Vector2 other) const
     {

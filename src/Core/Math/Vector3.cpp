@@ -12,21 +12,51 @@ namespace SuperEngine
     {
         return Vector3(x + other.x, y + other.y, z + other.z);
     }
+    void Vector3::operator+=(const Vector3 &other)
+    {
+        this->x = this->x + other.x;
+        this->y = this->y + other.y;
+        this->z = this->z + other.z;
+    }
     Vector3 Vector3::operator-(const Vector3 &other) const
     {
         return Vector3(x - other.x, y - other.y, z - other.z);
+    }
+    void Vector3::operator-=(const Vector3 &other)
+    {
+        this->x = this->x - other.x;
+        this->y = this->y - other.y;
+        this->z = this->z - other.z;
     }
     Vector3 Vector3::operator*(float scalar) const
     {
         return Vector3(x * scalar, y * scalar, z * scalar);
     }
-    float Vector3::operator*(Vector3 &other) const
+    void Vector3::operator*=(float scalar)
+    {
+        this->x = this->x * scalar;
+        this->y = this->y * scalar;
+        this->z = this->z * scalar;
+    }
+    float Vector3::operator*(const Vector3 &other) const
     {
         return x * other.x + y * other.y + z * other.z;
+    }
+    void Vector3::operator*=(const Vector3 &other)
+    {
+        this->x = this->x * other.x;
+        this->y = this->y * other.y;
+        this->z = this->z * other.z;
     }
     Vector3 Vector3::operator/(float scalar) const
     {
         return Vector3(x / scalar, y / scalar, z / scalar);
+    }
+    void Vector3::operator/=(float scalar)
+    {
+        this->x = this->x / scalar;
+        this->y = this->y / scalar;
+        this->z = this->z / scalar;
     }
     bool Vector3::operator!=(Vector3 other) const
     {

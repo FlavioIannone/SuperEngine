@@ -17,7 +17,8 @@ FetchContent_MakeAvailable(SDL2)
 # Source files
 add_executable(SuperEngine
     ./src/main.cpp # main
-    ./src/Core/Engine/Engine.cpp # Engine
+    # Engine
+    ./src/Core/Engine/Engine.cpp 
     # SceneManagement
     ./src/Core/SceneManagement/Scene.cpp
     ./src/Core/GameObject.cpp # GameObject

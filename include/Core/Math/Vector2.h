@@ -17,10 +17,15 @@ namespace SuperEngine
 
         // Operators overload
         Vector2 operator+(const Vector2 &other) const;
+        void operator+=(const Vector2 &other);
         Vector2 operator-(const Vector2 &other) const;
+        void operator-=(const Vector2 &other);
         Vector2 operator*(float scalar) const;
-        float operator*(Vector2 &other) const;
+        void operator*=(float scalar);
+        float operator*(const Vector2 &other) const;
+        void operator*=(const Vector2 &other);
         Vector2 operator/(float scalar) const;
+        void operator/=(float scalar);
         bool operator!=(Vector2 other) const;
         bool operator==(Vector2 other) const;
     };
