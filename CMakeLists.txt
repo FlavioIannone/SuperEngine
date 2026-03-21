@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 3.10)
+cmake_minimum_required(VERSION 3.10...3.30)
 project(SuperEngine CXX)
 
 set(CMAKE_CXX_STANDARD 17)
@@ -19,6 +19,7 @@ add_executable(SuperEngine
     ./src/main.cpp # main
     # Engine
     ./src/Core/Engine/Engine.cpp 
+    ./src/Core/Engine/RenderingManager.cpp 
     # SceneManagement
     ./src/Core/SceneManagement/Scene.cpp
     ./src/Core/GameObject.cpp # GameObject
@@ -26,6 +27,8 @@ add_executable(SuperEngine
     # Components
     ./src/Core/Components/Transform.cpp
     ./src/Core/Components/Camera.cpp
+    # Scripts
+    ./src/TestScript.cpp
     # Math
     ./src/Core/Math/Vector2.cpp
     ./src/Core/Math/Vector3.cpp

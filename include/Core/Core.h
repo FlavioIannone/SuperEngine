@@ -14,3 +14,8 @@
 // --- COMPONENTS ---
 #include "./Components/Transform.h"
 #include "./Components/Camera.h"
+#include "./Components/MeshRenderer.h"
+
+// --- MESH ---
+#include "./Mesh/Mesh.h"
+#include "./Mesh/CubeMesh.h"

@@ -14,6 +14,7 @@ namespace SuperEngine
     private:
         // Flags
         std::atomic<bool> isRunning = true;
+        std::atomic<bool> isFirstFrame = true;
         // Scene Management
         std::vector<std::unique_ptr<Scene>> m_scenes;
         Scene *m_activeScene = nullptr;
@@ -49,16 +50,46 @@ namespace SuperEngine
         void SetActiveScene(uint64_t sceneId);
 
         // Setters
-        void SetWidth(int width) { Engine::width = width; }
-        void SetHeight(int height) { Engine::height = height; }
+        void SetWidth(int width)
+        {
+            Engine::width = width;
+            if (m_window)
+            {
+                SDL_SetWindowSize(m_window, width, height);
+                SDL_SetWindowPosition(m_window, SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED);
+            }
+            else
+            {
+                std::cout << "[Warning] The window is not initialized!\n";
+            }
+        }
+        void SetHeight(int height)
+        {
+            Engine::height = height;
+            if (m_window)
+            {
+                SDL_SetWindowSize(m_window, width, height);
+                SDL_SetWindowPosition(m_window, SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED);
+            }
+            else
+            {
+                std::cout << "[Warning] The window is not initialized!\n";
+            }
+        }
         void SetFieldOfView(int fieldOfView) { Engine::fov = fieldOfView; }
         // Getters
         int GetWidth() { return width; }
         int GetHeight() { return height; }
         int GetFieldOfView() { return fov; }
+        bool IsFirstFrame() { return isFirstFrame; }
+        SDL_Renderer *GetRenderer() { return m_renderer; }
 
     private:
         Engine();
         ~Engine();
+
+        // Internal methods
+        void HandleSDLWindowEventPolling();
+        bool InitSDLWindowAndRenderer();
     };
 }

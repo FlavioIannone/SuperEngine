@@ -23,6 +23,7 @@ namespace SuperEngine
     {
         isFirstFrame = false;
         // Call awake for the scenes.
+        for (auto &scene : m_scenes)
         {
             scene->Awake();
         }
@@ -47,6 +48,7 @@ namespace SuperEngine
             SDL_RenderClear(m_renderer);
 
             // Draw phase
+            RenderingManager::GetInstance().Render();
 
             SDL_RenderPresent(m_renderer);
             // Do the cleanup for the scene, if a gameobject is pending a destroy, destroy if at the end of the frame
