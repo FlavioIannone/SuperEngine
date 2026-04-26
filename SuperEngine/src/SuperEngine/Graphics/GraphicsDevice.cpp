@@ -115,10 +115,10 @@ namespace SuperEngine
         }
 
         // Creates the constant buffers.
-        bool resCBCreation = CreateTransformationMatrixCB() &&
-                             CreateCameraMatrixCB() && CreateScreenSizeCB();
+        bool cbsCreationRes = CreateGlobalObjectsCB() && CreateObjectIndexCB() &&
+                              CreateCameraMatrixCB() && CreateScreenSizeCB();
 
-        if (!resCBCreation)
+        if (!cbsCreationRes)
         {
             std::cout << "Cannot create the Constant buffer!\n";
             return false;
@@ -229,7 +229,6 @@ namespace SuperEngine
 
         return SUCCEEDED(hr);
     }
-
     bool GraphicsDevice::CreateProjectedTriangleBuffer(UINT triangleCount, ID3D11Buffer **bufferOut, ID3D11ShaderResourceView **srvOut, ID3D11UnorderedAccessView **uavOut)
     {
         D3D11_BUFFER_DESC bd = {};
@@ -267,20 +266,33 @@ namespace SuperEngine
         return true;
     }
 
-    bool GraphicsDevice::CreateTransformationMatrixCB()
+    bool GraphicsDevice::CreateGlobalObjectsCB()
     {
-        D3D11_BUFFER_DESC bd = {};
-        bd.Usage = D3D11_USAGE_DYNAMIC;       // Updated by the CPU, read by the GPU.
-        bd.ByteWidth = sizeof(GPUObjectData); // Has to be a multiple of 16, GPU alignation rules.
-        bd.BindFlags = D3D11_BIND_CONSTANT_BUFFER;
-        bd.CPUAccessFlags = D3D11_CPU_ACCESS_WRITE; // CPU needs the access to write.
-        bd.MiscFlags = 0;
-        bd.StructureByteStride = 0;
+        D3D11_BUFFER_DESC sbDesc = {};
+        sbDesc.ByteWidth = sizeof(Matrix4x4) * globalObjectsBuffSize; // Space for globalObjectsBuffSize matrices
+        sbDesc.Usage = D3D11_USAGE_DYNAMIC;                           // The CPU will update this buffer every frame
+        sbDesc.BindFlags = D3D11_BIND_SHADER_RESOURCE;                // Will be read by a SRV
+        sbDesc.CPUAccessFlags = D3D11_CPU_ACCESS_WRITE;               // CPU can write
+        sbDesc.MiscFlags = D3D11_RESOURCE_MISC_BUFFER_STRUCTURED;     // This is a StructuredBuffer
+        sbDesc.StructureByteStride = sizeof(Matrix4x4);               // Size of a single structure
 
-        HRESULT hr = device->CreateBuffer(&bd, nullptr, &transformationMatrixCB);
-        return SUCCEEDED(hr);
+        // Create the buffer
+        HRESULT hr = device->CreateBuffer(&sbDesc, nullptr, globalObjectsCB.GetAddressOf());
+        if (FAILED(hr))
+        {
+            std::cout << "Error while creating the GlobalObjects buffer.\n";
+            return false;
+        }
+
+        D3D11_SHADER_RESOURCE_VIEW_DESC srvDesc = {};
+        srvDesc.Format = DXGI_FORMAT_UNKNOWN;
+        srvDesc.ViewDimension = D3D11_SRV_DIMENSION_BUFFER;
+        srvDesc.Buffer.FirstElement = 0;
+        srvDesc.Buffer.NumElements = globalObjectsBuffSize;
+        hr = device->CreateShaderResourceView(globalObjectsCB.Get(), &srvDesc, globalObjectsSRV.GetAddressOf());
+
+        return true;
     }
-
     bool GraphicsDevice::CreateCameraMatrixCB()
     {
         D3D11_BUFFER_DESC bd = {};
@@ -307,24 +319,23 @@ namespace SuperEngine
         HRESULT hr = device->CreateBuffer(&bd, nullptr, &screenSizeCB);
         return SUCCEEDED(hr);
     }
-
-    void GraphicsDevice::UpdateTransformationMatrixCB(const GPUObjectData &data)
+    bool GraphicsDevice::CreateObjectIndexCB()
     {
-        if (!transformationMatrixCB)
-            return;
+        D3D11_BUFFER_DESC idxDesc = {};
+        idxDesc.Usage = D3D11_USAGE_DYNAMIC;
+        idxDesc.ByteWidth = sizeof(GPUObjectIndex);
+        idxDesc.BindFlags = D3D11_BIND_CONSTANT_BUFFER;
+        idxDesc.CPUAccessFlags = D3D11_CPU_ACCESS_WRITE;
+        idxDesc.MiscFlags = 0;
+        idxDesc.StructureByteStride = 0;
 
-        D3D11_MAPPED_SUBRESOURCE mappedResource;
-
-        // Maps the data in the buffer, this also locks the resource. D3D11_MAP_WRITE_DISCARD tells the GPU to delete the previous data.
-        HRESULT hr = context->Map(transformationMatrixCB.Get(), 0, D3D11_MAP_WRITE_DISCARD, 0, &mappedResource);
-        if (SUCCEEDED(hr))
+        HRESULT hr = device->CreateBuffer(&idxDesc, nullptr, objectIndexCB.GetAddressOf());
+        if (FAILED(hr))
         {
-            // Copy the data into the VRAM buffer.
-            memcpy(mappedResource.pData, &data, sizeof(GPUObjectData));
-
-            // Unlock the memory
-            context->Unmap(transformationMatrixCB.Get(), 0);
+            std::cout << "Errore while creating the ObjectIndexCB!\n";
+            return false;
         }
+        return true;
     }
 
     void GraphicsDevice::UpdateCameraMatrixCB(const GPUCameraData &data)
@@ -360,56 +371,32 @@ namespace SuperEngine
             context->Unmap(screenSizeCB.Get(), 0);
         }
     }
-    void GraphicsDevice::Resize()
+    void GraphicsDevice::UpdateGlobalObjectsCB(const std::vector<GPUObjectData> &objs)
     {
-        int newWidth = Engine::GetInstance().GetWidth(), newHeight = Engine::GetInstance().GetHeight();
-        if (!swapChain || !device || newWidth == 0 || newHeight == 0)
+        if (objs.empty())
             return;
 
-        // Disconnect the UAVs
-        ID3D11UnorderedAccessView *nullUAVs[2] = {nullptr, nullptr};
-        context->CSSetUnorderedAccessViews(0, 2, nullUAVs, nullptr);
+        D3D11_MAPPED_SUBRESOURCE mapped;
+        context->Map(GetGlobalObjectsCB(), 0, D3D11_MAP_WRITE_DISCARD, 0, &mapped); // Lock the buffer
+        memcpy(mapped.pData, objs.data(), sizeof(GPUObjectData) * objs.size());     // Copy the data into the VRAM
+        context->Unmap(GetGlobalObjectsCB(), 0);
+    }
+    void GraphicsDevice::UpdateObjectIndexCB(UINT instanceIndex)
+    {
+        if (!objectIndexCB || !context)
+            return;
 
-        // Delete the UAVs and Textures
-        screenUAV.Reset();
-        depthUAV.Reset();
-        computeTargetTexture.Reset();
-        depthTexture.Reset();
+        D3D11_MAPPED_SUBRESOURCE mapped;
 
-        // Resize the buffers
-        HRESULT hr = swapChain->ResizeBuffers(2, newWidth, newHeight, DXGI_FORMAT_R8G8B8A8_UNORM, 0);
-        if (FAILED(hr))
+        HRESULT hr = context->Map(objectIndexCB.Get(), 0, D3D11_MAP_WRITE_DISCARD, 0, &mapped);
+
+        if (SUCCEEDED(hr))
         {
-            std::cout << "Errore while resizing the swap chain!\n";
-            return;
+            GPUObjectIndex data = {};
+            data.instanceIndex = instanceIndex;
+            memcpy(mapped.pData, &data, sizeof(GPUObjectIndex));
+
+            context->Unmap(objectIndexCB.Get(), 0);
         }
-
-        // Create the new Textures
-        D3D11_TEXTURE2D_DESC screenTextDesc = {};
-        screenTextDesc.Width = newWidth;
-        screenTextDesc.Height = newHeight;
-        screenTextDesc.MipLevels = 1;
-        screenTextDesc.ArraySize = 1;
-        screenTextDesc.Format = DXGI_FORMAT_R8G8B8A8_UNORM;
-        screenTextDesc.SampleDesc.Count = 1;
-        screenTextDesc.Usage = D3D11_USAGE_DEFAULT;
-        screenTextDesc.BindFlags = D3D11_BIND_UNORDERED_ACCESS | D3D11_BIND_SHADER_RESOURCE;
-
-        D3D11_TEXTURE2D_DESC depthTextDesc = screenTextDesc;
-        depthTextDesc.Format = DXGI_FORMAT_R32_FLOAT;
-        depthTextDesc.BindFlags = D3D11_BIND_UNORDERED_ACCESS;
-
-        device->CreateTexture2D(&screenTextDesc, nullptr, computeTargetTexture.GetAddressOf());
-        device->CreateTexture2D(&depthTextDesc, nullptr, depthTexture.GetAddressOf());
-
-        // Create the new uavs
-        D3D11_UNORDERED_ACCESS_VIEW_DESC uavDesc = {};
-        uavDesc.Format = screenTextDesc.Format;
-        uavDesc.ViewDimension = D3D11_UAV_DIMENSION_TEXTURE2D;
-
-        device->CreateUnorderedAccessView(computeTargetTexture.Get(), &uavDesc, screenUAV.GetAddressOf());
-
-        uavDesc.Format = depthTextDesc.Format;
-        device->CreateUnorderedAccessView(depthTexture.Get(), &uavDesc, depthUAV.GetAddressOf());
     }
 }

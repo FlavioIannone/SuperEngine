@@ -37,6 +37,12 @@ namespace SuperEngine
         float worldMatrix[16]; // 4x4 matrix
     };
 
+    // 4 + 12 (padding) bytes
+    struct alignas(16) GPUObjectIndex
+    {
+        UINT instanceIndex;
+    };
+
     // (16 + 16) * 4 bytes
     struct alignas(16) GPUCameraData
     {

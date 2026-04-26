@@ -21,7 +21,7 @@ int main(int argc, char **args)
     std::vector<GameObject *> cubesPool;
 
     srand(static_cast<unsigned>(time(nullptr)));
-    for (int i = 0; i < 200; i++)
+    for (int i = 0; i < 1000; i++)
     {
 
         float rX = static_cast<float>(rand()) / static_cast<float>(RAND_MAX);

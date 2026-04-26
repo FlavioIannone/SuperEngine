@@ -16,9 +16,11 @@ namespace SuperEngine
 
         RenderingManager() = default;
         ~RenderingManager() = default;
+        GPUObjectData PrepareObjectData(const Matrix4x4 &matrix);
         GPUCameraData PrepareCameraData(const Matrix4x4 &view, const Matrix4x4 &proj);
         void UpdateCameraCB();
         void UpdateScreenSizeCB();
+        void UpdateObjectDataCB();
 
     public:
         static RenderingManager &GetInstance()
@@ -36,7 +38,5 @@ namespace SuperEngine
         void RemoveRenderer(MeshRenderer *r);
         void SetActiveCamera(Camera *c) { activeCamera = c; }
         Camera *GetActiveCamera() const { return activeCamera; }
-        GPUObjectData PrepareObjectData(const Matrix4x4 &matrix);
-        GPUCameraData PrepareCameraData(const Matrix4x4 &view, const Matrix4x4 &proj);
     };
 }
