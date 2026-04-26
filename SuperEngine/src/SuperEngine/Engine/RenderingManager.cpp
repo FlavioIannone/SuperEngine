@@ -32,71 +32,64 @@ namespace SuperEngine
         // Loads the screen size data into the constant buffer
         UpdateScreenSizeCB();
         // Loads the transformation data into the constant buffer
-        UpdateObjectDataCB();
+        UpdateObjectDataSB();
 
         // Bind the globalObjects srv (t1)
         ID3D11ShaderResourceView *transformSRVs[1] = {graphicsDevice->GetGlobalObjectsSRV()};
         context->CSSetShaderResources(1, 1, transformSRVs);
 
-        int instanceIndex = 0;
+        UINT objectIndex = 0;
+        UINT globalOffset = 0;
         for (MeshRenderer *r : renderers)
         {
             if (!r->IsEnabled())
                 continue;
 
-            graphicsDevice->UpdateObjectIndexCB(instanceIndex);
+            UINT trianglesCount = r->GetSharedMesh()->GetTrianglesCount(); // Number of triangles in this mesh
+            UINT gpuDispatchGroups = (trianglesCount + 63) / 64;           // Numbers of thread groups
+
+            // Object metadata
+            GPUObjectMetadata objMetadata = {};
+            objMetadata.objectIndex = objectIndex;
+            objMetadata.globalOffset = globalOffset;
+            graphicsDevice->UpdateObjectMetadataCB(objMetadata);
 
             // GEOMETRY PASS
             geometryPassShader->Bind(context);
-            // geometry cbs
-            ID3D11Buffer *geom_cbs[3] = {
-                graphicsDevice->GetCameraDataCB(), // b0
-                graphicsDevice->GetScreenSizeCB(), // b1
-                graphicsDevice->GetObjectIndexCB() // b2
+            // Geometry cbs
+            ID3D11Buffer *cbs[3] = {
+                graphicsDevice->GetCameraDataCB(),    // b0
+                graphicsDevice->GetScreenSizeCB(),    // b1
+                graphicsDevice->GetObjectMetadataCB() // b2
             };
-            context->CSSetConstantBuffers(0, sizeof(geom_cbs) / sizeof(ID3D11Buffer *), geom_cbs);
+            context->CSSetConstantBuffers(0, sizeof(cbs) / sizeof(ID3D11Buffer *), cbs);
+            // Geometry srvs
+            ID3D11ShaderResourceView *srvs[1] = {r->GetSharedMesh()->GetTrianglesSRV()};
+            context->CSSetShaderResources(0, sizeof(srvs) / sizeof(ID3D11ShaderResourceView *), srvs); // t0
+            // Geometry uavs
+            ID3D11UnorderedAccessView *uavs[1] = {graphicsDevice->GetProjectedTrianglesUAV()};
+            context->CSSetUnorderedAccessViews(0, sizeof(uavs) / sizeof(ID3D11UnorderedAccessView *), uavs, nullptr); // u0
+            geometryPassShader->Dispatch(context, gpuDispatchGroups, 1, 1);
 
-            // geometry srvs
-            ID3D11ShaderResourceView *geomSRVs[1] = {r->GetSharedMesh()->GetTrianglesSRV()};
-            context->CSSetShaderResources(0, sizeof(geomSRVs) / sizeof(ID3D11ShaderResourceView *), geomSRVs); // t0
-            // geometry uavs
-            ID3D11UnorderedAccessView *geomUAVs[1] = {r->GetProjectedTriangleUAV()};
-            context->CSSetUnorderedAccessViews(0, sizeof(geomUAVs) / sizeof(ID3D11UnorderedAccessView *), geomUAVs, nullptr); // u0
-
-            // Calculate the number of thread groups
-            UINT numTriangles = r->GetSharedMesh()->GetTrianglesCount();
-            UINT dispatchGroups = (numTriangles + 63) / 64;
-
-            geometryPassShader->Dispatch(context, dispatchGroups, 1, 1);
-
-            // Transition
-            // Clear the srv
-            ID3D11UnorderedAccessView *nullUAVs[1] = {nullptr};
-            context->CSSetUnorderedAccessViews(0, 1, nullUAVs, nullptr);
-
-            // RASTERIZATION PASS
-            rasterizationPassShader->Bind(context);
-
-            // Rasterization cbs
-            ID3D11Buffer *rast_cbs[1] = {graphicsDevice->GetScreenSizeCB()};
-            context->CSSetConstantBuffers(0, sizeof(rast_cbs) / sizeof(ID3D11Buffer *), rast_cbs); // b0
-
-            // Rasterization srv
-            ID3D11ShaderResourceView *rastSRVs[1] = {r->GetProjectedTriangleSRV()};
-            context->CSSetShaderResources(0, 1, rastSRVs); // t0
-
-            // Rasterization uavs
-            ID3D11UnorderedAccessView *rastUAVs[2] = {screenUAV, zBufferUAV};
-            context->CSSetUnorderedAccessViews(0, 2, rastUAVs, nullptr); // ScreenUAV (u0), zBufferUAV (u1)
-
-            rasterizationPassShader->Dispatch(context, dispatchGroups, 1, 1);
-
-            // Clear
-            ID3D11ShaderResourceView *nullSRVs[1] = {nullptr};
-            context->CSSetShaderResources(0, 1, nullSRVs);
-
-            instanceIndex++;
+            objectIndex++;
+            globalOffset += trianglesCount;
         }
+
+        // Bind the rasterization shader pass
+        rasterizationPassShader->Bind(context);
+        // Rasterization cbs
+        ID3D11Buffer *cbs[1] = {graphicsDevice->GetScreenSizeCB()};
+        context->CSSetConstantBuffers(0, sizeof(cbs) / sizeof(ID3D11Buffer *), cbs);
+
+        // Rasterization uavs
+        ID3D11UnorderedAccessView *uavs[2] = {graphicsDevice->GetScreenUAV(), graphicsDevice->GetZBufferUAV()};
+        context->CSSetUnorderedAccessViews(0, sizeof(uavs) / sizeof(ID3D11UnorderedAccessView *), uavs, nullptr);
+
+        // Rasterization srvs
+        ID3D11ShaderResourceView *srvs[1] = {graphicsDevice->GetProjectedTrianglesSRV()};
+        context->CSSetShaderResources(0, sizeof(srvs) / sizeof(ID3D11ShaderResourceView *), srvs);
+        UINT dispathGroups = (globalOffset + (globalOffset - 1)) / 64;
+        rasterizationPassShader->Dispatch(context, dispatchX, 1, 1);
     }
     void RenderingManager::AddRenderer(MeshRenderer *r)
     {
@@ -199,7 +192,7 @@ namespace SuperEngine
         sz_objData.height = static_cast<UINT>(Engine::GetInstance().GetHeight());
         graphicsDevice->UpdateScreenSizeCB(sz_objData);
     }
-    void RenderingManager::UpdateObjectDataCB()
+    void RenderingManager::UpdateObjectDataSB()
     {
         auto graphicsDevice = Engine::GetInstance().GetGraphicsDevice();
         auto context = graphicsDevice->GetContext();
@@ -216,6 +209,6 @@ namespace SuperEngine
         }
 
         // Upload the matrices bucket into the VRAM
-        graphicsDevice->UpdateGlobalObjectsCB(matrices);
+        graphicsDevice->UpdateGlobalObjectsSB(matrices);
     }
 }

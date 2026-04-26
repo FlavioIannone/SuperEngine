@@ -21,15 +21,15 @@ int main(int argc, char **args)
     std::vector<GameObject *> cubesPool;
 
     srand(static_cast<unsigned>(time(nullptr)));
-    for (int i = 0; i < 1000; i++)
+    for (int i = 0; i < 3000; i++)
     {
 
         float rX = static_cast<float>(rand()) / static_cast<float>(RAND_MAX);
         float rY = static_cast<float>(rand()) / static_cast<float>(RAND_MAX);
         float rZ = static_cast<float>(rand()) / static_cast<float>(RAND_MAX);
 
-        float posX = (rX * 80.0f) - 40.0f;
-        float posY = (rY * 80.0f) - 40.0f;
+        float posX = (rX * 40.0f) - 20.0f;
+        float posY = (rY * 40.0f) - 20.0f;
         float posZ = (rZ * 40.0f) + 10.0f;
 
         auto cube = worldScene->CreateCube(Vector3(posX, posY, posZ));

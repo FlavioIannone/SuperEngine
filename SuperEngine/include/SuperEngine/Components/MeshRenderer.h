@@ -13,9 +13,6 @@ namespace SuperEngine
     {
     private:
         std::shared_ptr<Mesh> m_sharedMesh;
-        Microsoft::WRL::ComPtr<ID3D11Buffer> m_projectedTriangleBuffer;
-        Microsoft::WRL::ComPtr<ID3D11ShaderResourceView> m_projectedTriangleSRV;
-        Microsoft::WRL::ComPtr<ID3D11UnorderedAccessView> m_projectedTriangleUAV;
         std::string meshFilepath;
 
     public:
@@ -38,8 +35,6 @@ namespace SuperEngine
         void SetMesh();
 
         // Getters
-        ID3D11ShaderResourceView *GetProjectedTriangleSRV() const { return m_projectedTriangleSRV.Get(); }
-        ID3D11UnorderedAccessView *GetProjectedTriangleUAV() const { return m_projectedTriangleUAV.Get(); }
         Mesh *GetSharedMesh() const { return (m_sharedMesh.get()); }
     };
 }

@@ -48,7 +48,6 @@ namespace SuperEngine
                 if (!lineStream.fail())
                 {
                     tris.push_back(t);
-                    m_triangleCount++;
                 }
                 else
                 {

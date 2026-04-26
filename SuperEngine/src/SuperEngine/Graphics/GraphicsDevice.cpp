@@ -115,7 +115,7 @@ namespace SuperEngine
         }
 
         // Creates the constant buffers.
-        bool cbsCreationRes = CreateGlobalObjectsCB() && CreateObjectIndexCB() &&
+        bool cbsCreationRes = CreateProjectedTriangleSB() && CreateGlobalObjectsSB() && CreateObjectMetadataCB() &&
                               CreateCameraMatrixCB() && CreateScreenSizeCB();
 
         if (!cbsCreationRes)
@@ -195,6 +195,7 @@ namespace SuperEngine
         device->CreateUnorderedAccessView(depthTexture.Get(), &uavDesc, depthUAV.GetAddressOf());
     }
 
+    // Triangles cb
     bool GraphicsDevice::CreateTriangleBuffer(const std::vector<GPUTriangle> &triangles, ID3D11Buffer **bufferOut, ID3D11ShaderResourceView **srvOut)
     {
         if (triangles.empty())
@@ -229,17 +230,17 @@ namespace SuperEngine
 
         return SUCCEEDED(hr);
     }
-    bool GraphicsDevice::CreateProjectedTriangleBuffer(UINT triangleCount, ID3D11Buffer **bufferOut, ID3D11ShaderResourceView **srvOut, ID3D11UnorderedAccessView **uavOut)
+    bool GraphicsDevice::CreateProjectedTriangleSB()
     {
         D3D11_BUFFER_DESC bd = {};
         bd.Usage = D3D11_USAGE_DEFAULT; // GPU Reads and Writes, CPU no
-        bd.ByteWidth = sizeof(GPUProjectedTriangle) * triangleCount;
+        bd.ByteWidth = sizeof(GPUProjectedTriangle) * projectedTrianglesBuffSize;
         bd.BindFlags = D3D11_BIND_UNORDERED_ACCESS | D3D11_BIND_SHADER_RESOURCE;
         bd.CPUAccessFlags = 0;
         bd.MiscFlags = D3D11_RESOURCE_MISC_BUFFER_STRUCTURED;
         bd.StructureByteStride = sizeof(GPUProjectedTriangle);
 
-        HRESULT hr = device->CreateBuffer(&bd, nullptr, bufferOut);
+        HRESULT hr = device->CreateBuffer(&bd, nullptr, projectedTrianglesSB.GetAddressOf());
         if (FAILED(hr))
             return false;
         // Shader Resource View, Let's the GPU Read, but not write, for the pass 2
@@ -247,9 +248,9 @@ namespace SuperEngine
         srvDesc.Format = DXGI_FORMAT_UNKNOWN; // Let the shader see the raw data
         srvDesc.ViewDimension = D3D11_SRV_DIMENSION_BUFFER;
         srvDesc.Buffer.FirstElement = 0;
-        srvDesc.Buffer.NumElements = triangleCount;
+        srvDesc.Buffer.NumElements = projectedTrianglesBuffSize;
 
-        hr = device->CreateShaderResourceView(*bufferOut, &srvDesc, srvOut);
+        hr = device->CreateShaderResourceView(projectedTrianglesSB.Get(), &srvDesc, projectedTrianglesSRV.GetAddressOf());
         if (FAILED(hr))
             return false;
 
@@ -258,86 +259,15 @@ namespace SuperEngine
         uavDesc.Format = DXGI_FORMAT_UNKNOWN;
         uavDesc.ViewDimension = D3D11_UAV_DIMENSION_BUFFER;
         uavDesc.Buffer.FirstElement = 0;
-        uavDesc.Buffer.NumElements = triangleCount;
+        uavDesc.Buffer.NumElements = projectedTrianglesBuffSize;
 
-        hr = device->CreateUnorderedAccessView(*bufferOut, &uavDesc, uavOut);
+        hr = device->CreateUnorderedAccessView(projectedTrianglesSB.Get(), &uavDesc, projectedTrianglesUAV.GetAddressOf());
         if (FAILED(hr))
             return false;
         return true;
     }
 
-    bool GraphicsDevice::CreateGlobalObjectsCB()
-    {
-        D3D11_BUFFER_DESC sbDesc = {};
-        sbDesc.ByteWidth = sizeof(Matrix4x4) * globalObjectsBuffSize; // Space for globalObjectsBuffSize matrices
-        sbDesc.Usage = D3D11_USAGE_DYNAMIC;                           // The CPU will update this buffer every frame
-        sbDesc.BindFlags = D3D11_BIND_SHADER_RESOURCE;                // Will be read by a SRV
-        sbDesc.CPUAccessFlags = D3D11_CPU_ACCESS_WRITE;               // CPU can write
-        sbDesc.MiscFlags = D3D11_RESOURCE_MISC_BUFFER_STRUCTURED;     // This is a StructuredBuffer
-        sbDesc.StructureByteStride = sizeof(Matrix4x4);               // Size of a single structure
-
-        // Create the buffer
-        HRESULT hr = device->CreateBuffer(&sbDesc, nullptr, globalObjectsCB.GetAddressOf());
-        if (FAILED(hr))
-        {
-            std::cout << "Error while creating the GlobalObjects buffer.\n";
-            return false;
-        }
-
-        D3D11_SHADER_RESOURCE_VIEW_DESC srvDesc = {};
-        srvDesc.Format = DXGI_FORMAT_UNKNOWN;
-        srvDesc.ViewDimension = D3D11_SRV_DIMENSION_BUFFER;
-        srvDesc.Buffer.FirstElement = 0;
-        srvDesc.Buffer.NumElements = globalObjectsBuffSize;
-        hr = device->CreateShaderResourceView(globalObjectsCB.Get(), &srvDesc, globalObjectsSRV.GetAddressOf());
-
-        return true;
-    }
-    bool GraphicsDevice::CreateCameraMatrixCB()
-    {
-        D3D11_BUFFER_DESC bd = {};
-        bd.Usage = D3D11_USAGE_DYNAMIC;       // Updated by the CPU, read by the GPU.
-        bd.ByteWidth = sizeof(GPUCameraData); // Has to be a multiple of 16, GPU alignation rules.
-        bd.BindFlags = D3D11_BIND_CONSTANT_BUFFER;
-        bd.CPUAccessFlags = D3D11_CPU_ACCESS_WRITE; // CPU needs the access to write.
-        bd.MiscFlags = 0;
-        bd.StructureByteStride = 0;
-
-        HRESULT hr = device->CreateBuffer(&bd, nullptr, &cameraMatrixCB);
-        return SUCCEEDED(hr);
-    }
-    bool GraphicsDevice::CreateScreenSizeCB()
-    {
-        D3D11_BUFFER_DESC bd = {};
-        bd.Usage = D3D11_USAGE_DYNAMIC;       // Updated by the CPU, read by the GPU.
-        bd.ByteWidth = sizeof(GPUScreenSize); // Has to be a multiple of 16, GPU alignation rules.
-        bd.BindFlags = D3D11_BIND_CONSTANT_BUFFER;
-        bd.CPUAccessFlags = D3D11_CPU_ACCESS_WRITE; // CPU needs the access to write.
-        bd.MiscFlags = 0;
-        bd.StructureByteStride = 0;
-
-        HRESULT hr = device->CreateBuffer(&bd, nullptr, &screenSizeCB);
-        return SUCCEEDED(hr);
-    }
-    bool GraphicsDevice::CreateObjectIndexCB()
-    {
-        D3D11_BUFFER_DESC idxDesc = {};
-        idxDesc.Usage = D3D11_USAGE_DYNAMIC;
-        idxDesc.ByteWidth = sizeof(GPUObjectIndex);
-        idxDesc.BindFlags = D3D11_BIND_CONSTANT_BUFFER;
-        idxDesc.CPUAccessFlags = D3D11_CPU_ACCESS_WRITE;
-        idxDesc.MiscFlags = 0;
-        idxDesc.StructureByteStride = 0;
-
-        HRESULT hr = device->CreateBuffer(&idxDesc, nullptr, objectIndexCB.GetAddressOf());
-        if (FAILED(hr))
-        {
-            std::cout << "Errore while creating the ObjectIndexCB!\n";
-            return false;
-        }
-        return true;
-    }
-
+    // Camera cb
     void GraphicsDevice::UpdateCameraMatrixCB(const GPUCameraData &data)
     {
         if (!cameraMatrixCB)
@@ -356,6 +286,21 @@ namespace SuperEngine
             context->Unmap(cameraMatrixCB.Get(), 0);
         }
     }
+    bool GraphicsDevice::CreateCameraMatrixCB()
+    {
+        D3D11_BUFFER_DESC bd = {};
+        bd.Usage = D3D11_USAGE_DYNAMIC;       // Updated by the CPU, read by the GPU.
+        bd.ByteWidth = sizeof(GPUCameraData); // Has to be a multiple of 16, GPU alignation rules.
+        bd.BindFlags = D3D11_BIND_CONSTANT_BUFFER;
+        bd.CPUAccessFlags = D3D11_CPU_ACCESS_WRITE; // CPU needs the access to write.
+        bd.MiscFlags = 0;
+        bd.StructureByteStride = 0;
+
+        HRESULT hr = device->CreateBuffer(&bd, nullptr, cameraMatrixCB.GetAddressOf());
+        return SUCCEEDED(hr);
+    }
+
+    // Screen size cb
     void GraphicsDevice::UpdateScreenSizeCB(const GPUScreenSize &size)
     {
         D3D11_MAPPED_SUBRESOURCE mappedResource;
@@ -371,7 +316,22 @@ namespace SuperEngine
             context->Unmap(screenSizeCB.Get(), 0);
         }
     }
-    void GraphicsDevice::UpdateGlobalObjectsCB(const std::vector<GPUObjectData> &objs)
+    bool GraphicsDevice::CreateScreenSizeCB()
+    {
+        D3D11_BUFFER_DESC bd = {};
+        bd.Usage = D3D11_USAGE_DYNAMIC;       // Updated by the CPU, read by the GPU.
+        bd.ByteWidth = sizeof(GPUScreenSize); // Has to be a multiple of 16, GPU alignation rules.
+        bd.BindFlags = D3D11_BIND_CONSTANT_BUFFER;
+        bd.CPUAccessFlags = D3D11_CPU_ACCESS_WRITE; // CPU needs the access to write.
+        bd.MiscFlags = 0;
+        bd.StructureByteStride = 0;
+
+        HRESULT hr = device->CreateBuffer(&bd, nullptr, screenSizeCB.GetAddressOf());
+        return SUCCEEDED(hr);
+    }
+
+    // Global objects cb
+    void GraphicsDevice::UpdateGlobalObjectsSB(const std::vector<GPUObjectData> &objs)
     {
         if (objs.empty())
             return;
@@ -381,22 +341,71 @@ namespace SuperEngine
         memcpy(mapped.pData, objs.data(), sizeof(GPUObjectData) * objs.size());     // Copy the data into the VRAM
         context->Unmap(GetGlobalObjectsCB(), 0);
     }
-    void GraphicsDevice::UpdateObjectIndexCB(UINT instanceIndex)
+    bool GraphicsDevice::CreateGlobalObjectsSB()
     {
-        if (!objectIndexCB || !context)
+        D3D11_BUFFER_DESC sbDesc = {};
+        sbDesc.ByteWidth = sizeof(GPUObjectData) * globalObjectsBuffSize; // Space for globalObjectsBuffSize matrices
+        sbDesc.Usage = D3D11_USAGE_DYNAMIC;                               // The CPU will update this buffer every frame
+        sbDesc.BindFlags = D3D11_BIND_SHADER_RESOURCE;                    // Will be read by a SRV
+        sbDesc.CPUAccessFlags = D3D11_CPU_ACCESS_WRITE;                   // CPU can write
+        sbDesc.MiscFlags = D3D11_RESOURCE_MISC_BUFFER_STRUCTURED;         // This is a StructuredBuffer
+        sbDesc.StructureByteStride = sizeof(GPUObjectData);               // Size of a single structure
+
+        // Create the buffer
+        HRESULT hr = device->CreateBuffer(&sbDesc, nullptr, globalObjectsSB.GetAddressOf());
+        if (FAILED(hr))
+        {
+            std::cout << "Error while creating the GlobalObjects buffer.\n";
+            return false;
+        }
+
+        D3D11_SHADER_RESOURCE_VIEW_DESC srvDesc = {};
+        srvDesc.Format = DXGI_FORMAT_UNKNOWN;
+        srvDesc.ViewDimension = D3D11_SRV_DIMENSION_BUFFER;
+        srvDesc.Buffer.FirstElement = 0;
+        srvDesc.Buffer.NumElements = globalObjectsBuffSize;
+        hr = device->CreateShaderResourceView(globalObjectsSB.Get(), &srvDesc, globalObjectsSRV.GetAddressOf());
+
+        return true;
+    }
+
+    // Object metadata
+    void GraphicsDevice::UpdateObjectMetadataCB(const GPUObjectMetadata &objIndex)
+    {
+        if (!objectMetadataCB || !context)
             return;
 
         D3D11_MAPPED_SUBRESOURCE mapped;
 
-        HRESULT hr = context->Map(objectIndexCB.Get(), 0, D3D11_MAP_WRITE_DISCARD, 0, &mapped);
+        HRESULT hr = context->Map(objectMetadataCB.Get(), 0, D3D11_MAP_WRITE_DISCARD, 0, &mapped);
 
         if (SUCCEEDED(hr))
         {
-            GPUObjectIndex data = {};
-            data.instanceIndex = instanceIndex;
-            memcpy(mapped.pData, &data, sizeof(GPUObjectIndex));
+            GPUObjectMetadata data = {};
+            data.objectIndex = objIndex.objectIndex;
+            data.globalOffset = objIndex.globalOffset;
+            memcpy(mapped.pData, &data, sizeof(GPUObjectMetadata));
 
-            context->Unmap(objectIndexCB.Get(), 0);
+            context->Unmap(objectMetadataCB.Get(), 0);
         }
     }
+    bool GraphicsDevice::CreateObjectMetadataCB()
+    {
+        D3D11_BUFFER_DESC idxDesc = {};
+        idxDesc.Usage = D3D11_USAGE_DYNAMIC;
+        idxDesc.ByteWidth = sizeof(GPUObjectMetadata);
+        idxDesc.BindFlags = D3D11_BIND_CONSTANT_BUFFER;
+        idxDesc.CPUAccessFlags = D3D11_CPU_ACCESS_WRITE;
+        idxDesc.MiscFlags = 0;
+        idxDesc.StructureByteStride = 0;
+
+        HRESULT hr = device->CreateBuffer(&idxDesc, nullptr, objectMetadataCB.GetAddressOf());
+        if (FAILED(hr))
+        {
+            std::cout << "Errore while creating the ObjectIndexCB!\n";
+            return false;
+        }
+        return true;
+    }
+
 }

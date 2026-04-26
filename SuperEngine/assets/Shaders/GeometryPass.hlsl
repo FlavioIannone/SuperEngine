@@ -16,7 +16,8 @@ cbuffer ScreenSize : register(b1) // 16 byte
 cbuffer ObjectIndex : register(b2) // 16 byte
 {
     uint objectIndex;
-    float3 padding_objectIndex;
+    uint globalOffset;
+    float2 padding_objectIndex;
 };
 
 // Mesh
@@ -34,14 +35,14 @@ float3 ProjectToScreen(float4 viewVert, uint2 screenSize);
 
 [numthreads(64,1,1)]
 void CSMain(uint3 threadID : SV_DispatchThreadID) {
-    uint i = threadID.x;
+    uint triIndex = threadID.x;
         
     uint tBufferSize, stride;
     TriangleBuffer.GetDimensions(tBufferSize, stride);
 
-    if(i >= tBufferSize) return;
+    if(triIndex >= tBufferSize) return;
 
-    Triangle t = TriangleBuffer[i];
+    Triangle t = TriangleBuffer[triIndex];
     ProjectedTriangle pt = (ProjectedTriangle)0;
     
     float4 viewVerts[3];
@@ -49,7 +50,7 @@ void CSMain(uint3 threadID : SV_DispatchThreadID) {
     
     if(IsBackface(viewVerts)) {
         pt.isVisible = 0;
-        ProjectedTriangleBuffer[i] = pt;
+        ProjectedTriangleBuffer[triIndex] = pt;
         return;
     }
 
@@ -66,7 +67,7 @@ void CSMain(uint3 threadID : SV_DispatchThreadID) {
     pt.isVisible = 1; 
     pt.padding = float3(0,0,0);
     
-    ProjectedTriangleBuffer[i] = pt;
+    ProjectedTriangleBuffer[globalOffset+triIndex] = pt;
 }
 
 bool IsBackface(float4 viewVerts[3]) 

@@ -20,7 +20,7 @@ namespace SuperEngine
         GPUCameraData PrepareCameraData(const Matrix4x4 &view, const Matrix4x4 &proj);
         void UpdateCameraCB();
         void UpdateScreenSizeCB();
-        void UpdateObjectDataCB();
+        void UpdateObjectDataSB();
 
     public:
         static RenderingManager &GetInstance()
